@@ -5,7 +5,7 @@
 
     <!-- Public plugin name should be written in Title Case.
          Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
-    <name>Crudwizardrygenerator</name>
+    <name>CRUD Wizardry Generator</name>
 
     <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
     <vendor url="https://www.babscrontekker.com">BabsCron</vendor>
@@ -13,8 +13,19 @@
     <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
          Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
     <description><![CDATA[
-    Enter short description for your plugin here.<br>
-    <em>most HTML tags may be used</em>
+    <h3>Accelerate Your Spring Boot Development</h3>
+    <p>CRUD Wizardry Generator is an IntelliJ IDEA plugin designed to automate the creation of boilerplate code for Spring Boot applications.</p>
+    
+    <p><b>Key Features:</b></p>
+    <ul>
+        <li><b>Entity Generation:</b> Quickly create JPA Entity classes with Lombok annotations.</li>
+        <li><b>Repository Generation:</b> Generate Spring Data JPA Repositories for your entities.</li>
+        <li><b>Service Layer:</b> Create Service interfaces and implementations with standard CRUD logic.</li>
+        <li><b>Controller Generation:</b> Automatically build REST Controllers with standard endpoints.</li>
+        <li><b>DTO Support:</b> Easily generate Data Transfer Objects (DTOs) from your entity classes.</li>
+    </ul>
+
+    <p>Stop writing repetitive boilerplate code and start focusing on what matters—your business logic!</p>
   ]]></description>
 
     <!-- Product and plugin compatibility requirements.
