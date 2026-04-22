@@ -5,7 +5,7 @@
 
     <!-- Public plugin name should be written in Title Case.
          Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
-    <name>CRUD Wizardry Generator</name>
+    <name>SpringForge</name>
 
     <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
     <vendor url="https://www.babscrontekker.com">BabsCron</vendor>
@@ -14,7 +14,7 @@
          Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
     <description><![CDATA[
     <h3>Accelerate Your Spring Boot Development</h3>
-    <p>CRUD Wizardry Generator is an IntelliJ IDEA plugin designed to automate the creation of boilerplate code for Spring Boot applications.</p>
+    <p>SpringForge is an IntelliJ IDEA plugin designed to automate the creation of boilerplate code for Spring Boot applications.</p>
     
     <p><b>Key Features:</b></p>
     <ul>
@@ -44,34 +44,39 @@
     <actions>
         <action id="com.babs.crudwizardrygenerator.actions.GenerateEntityAction"
                 class="com.babs.crudwizardrygenerator.actions.GenerateEntityAction"
-                text="Generate Entity"
-                description="Generate a Lombok Entity class">
+                text="Generate CRUD"
+                icon="AllIcons.Actions.IntentionBulb"
+                description="Generate CRUD Components for the selected class or directory">
             <add-to-group group-id="NewGroup" anchor="last" />
             <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
         </action>
 
-        <group id="CrudWizardry.GenerateGroup" text="Generate CRUD Components" popup="true">
+        <group id="CrudWizardry.GenerateGroup" text="Generate CRUD Components" popup="true" icon="AllIcons.Actions.IntentionBulb">
             <add-to-group group-id="GenerateGroup" anchor="last"/>
             <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
             
             <action id="com.babs.crudwizardrygenerator.actions.GenerateControllerAction"
                     class="com.babs.crudwizardrygenerator.actions.GenerateControllerAction"
                     text="Generate Controller"
+                    icon="AllIcons.Nodes.AbstractClass"
                     description="Generates a Spring Boot Controller for this class"/>
             
             <action id="com.babs.crudwizardrygenerator.actions.GenerateServiceAction"
                     class="com.babs.crudwizardrygenerator.actions.GenerateServiceAction"
                     text="Generate Service"
+                    icon="AllIcons.Nodes.Interface"
                     description="Generates a Spring Boot Service for this class"/>
             
             <action id="com.babs.crudwizardrygenerator.actions.GenerateRepositoryAction"
                     class="com.babs.crudwizardrygenerator.actions.GenerateRepositoryAction"
                     text="Generate Repository"
+                    icon="AllIcons.Nodes.DataColumn"
                     description="Generates a Spring Data JPA Repository for this class"/>
             
             <action id="com.babs.crudwizardrygenerator.actions.GenerateDtoAction"
                     class="com.babs.crudwizardrygenerator.actions.GenerateDtoAction"
                     text="Generate DTO"
+                    icon="AllIcons.Nodes.Artifact"
                     description="Generates a DTO for this class"/>
         </group>
 
