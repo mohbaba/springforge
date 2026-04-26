@@ -39,7 +39,7 @@ CRUD Wizardry Generator is an IntelliJ IDEA plugin designed to streamline Spring
 
 ## License
 
-This project is licensed under the Apache License 2.0.
+This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE).
 
 ---
 Developed by [BabsCron](https://www.babscrontekker.com)
