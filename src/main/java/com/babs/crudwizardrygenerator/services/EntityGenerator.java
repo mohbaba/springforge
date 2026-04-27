@@ -1,6 +1,7 @@
 package com.babs.crudwizardrygenerator.services;
 
 import com.babs.crudwizardrygenerator.dtos.EntityData;
+import com.babs.crudwizardrygenerator.dtos.PersistenceApi;
 import com.intellij.ide.highlighter.JavaFileType;
 import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.project.Project;
@@ -20,6 +21,8 @@ import java.util.List;
 import java.util.Set;
 
 public class EntityGenerator {
+    private static final String JAKARTA_ENTITY = "jakarta.persistence.Entity";
+    private static final String JAVAX_ENTITY = "javax.persistence.Entity";
 
     private final Project project;
     private final EntityData data;
@@ -158,7 +161,7 @@ public class EntityGenerator {
             sb.append("package ").append(data.getPackageName()).append(";\n\n");
         }
 
-        sb.append("import jakarta.persistence.*;\n");
+        sb.append("import ").append(getPersistenceImportPrefix()).append(".*;\n");
         sb.append("import lombok.Data;\n");
         sb.append("import lombok.Builder;\n");
         sb.append("import lombok.NoArgsConstructor;\n");
@@ -268,7 +271,7 @@ public class EntityGenerator {
             sb.append("package ").append(data.getPackageName()).append(";\n\n");
         }
 
-        sb.append("import jakarta.persistence.*;\n");
+        sb.append("import ").append(getPersistenceImportPrefix()).append(".*;\n");
         if (data.isLombokData()) sb.append("import lombok.Data;\n");
         if (data.isLombokBuilder()) sb.append("import lombok.Builder;\n");
         sb.append("import lombok.NoArgsConstructor;\n");
@@ -300,6 +303,29 @@ public class EntityGenerator {
         
         sb.append("}\n");
         return sb.toString();
+    }
+
+    private String getPersistenceImportPrefix() {
+        PersistenceApi persistenceApi = resolvePersistenceApi();
+        return persistenceApi.getImportPrefix();
+    }
+
+    private PersistenceApi resolvePersistenceApi() {
+        PersistenceApi selectedApi = data.getPersistenceApi();
+        if (selectedApi != null && selectedApi != PersistenceApi.AUTO) {
+            return selectedApi;
+        }
+
+        JavaPsiFacade psiFacade = JavaPsiFacade.getInstance(project);
+        GlobalSearchScope scope = GlobalSearchScope.allScope(project);
+
+        if (psiFacade.findClass(JAKARTA_ENTITY, scope) != null) {
+            return PersistenceApi.JAKARTA;
+        }
+        if (psiFacade.findClass(JAVAX_ENTITY, scope) != null) {
+            return PersistenceApi.JAVAX;
+        }
+        return PersistenceApi.JAVAX;
     }
 
     private String renderRepositoryTemplate(String packageName) {

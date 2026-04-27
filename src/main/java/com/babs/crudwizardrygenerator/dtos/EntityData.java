@@ -9,6 +9,7 @@ public class EntityData {
     private final String packageName;
     private final boolean lombokData;
     private final boolean lombokBuilder;
+    private final PersistenceApi persistenceApi;
     private final List<FieldData> fields;
     
     // New fields for CRUD generation options
@@ -24,6 +25,7 @@ public class EntityData {
             String packageName,
             boolean lombokData,
             boolean lombokBuilder,
+            PersistenceApi persistenceApi,
             List<FieldData> fields,
             boolean generateEntity,
             boolean generateController,
@@ -36,6 +38,7 @@ public class EntityData {
         this.packageName = packageName;
         this.lombokData = lombokData;
         this.lombokBuilder = lombokBuilder;
+        this.persistenceApi = persistenceApi;
         this.fields = fields;
         this.generateEntity = generateEntity;
         this.generateController = generateController;
@@ -59,6 +62,10 @@ public class EntityData {
 
     public boolean isLombokBuilder() {
         return lombokBuilder;
+    }
+
+    public PersistenceApi getPersistenceApi() {
+        return persistenceApi;
     }
 
     public List<FieldData> getFields() {

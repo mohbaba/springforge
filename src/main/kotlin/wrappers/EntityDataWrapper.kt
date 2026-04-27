@@ -1,6 +1,7 @@
 package wrappers
 
 import com.babs.crudwizardrygenerator.dtos.EntityData
+import com.babs.crudwizardrygenerator.dtos.PersistenceApi
 import dtos.FieldData
 
 class EntityDataWrapper {
@@ -9,6 +10,7 @@ class EntityDataWrapper {
     var packageName: String = ""
     var lombokData: Boolean = true
     var lombokBuilder: Boolean = false
+    var persistenceApi: PersistenceApi = PersistenceApi.AUTO
     
     // CRUD Options
     var generateEntity: Boolean = true
@@ -33,6 +35,7 @@ class EntityDataWrapper {
             packageName,
             lombokData,
             lombokBuilder,
+            persistenceApi,
             fields.toList(),
             generateEntity,
             generateController,

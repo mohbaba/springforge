@@ -1,6 +1,7 @@
 package com.babs.crudwizardrygenerator.actions;
 
 import com.babs.crudwizardrygenerator.dtos.EntityData;
+import com.babs.crudwizardrygenerator.dtos.PersistenceApi;
 import com.babs.crudwizardrygenerator.services.EntityGenerator;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
@@ -42,6 +43,7 @@ public abstract class BaseGenerateAction extends AnAction {
                 packageName,
                 hasLombokAnnotation(psiClass, "lombok.Data"),
                 hasLombokAnnotation(psiClass, "lombok.Builder"),
+                detectPersistenceApi(psiClass),
                 fields,
                 false, // generateEntity - false because we are generating from an existing class
                 isGenerateController(),
@@ -110,6 +112,16 @@ public abstract class BaseGenerateAction extends AnAction {
     
     private boolean hasLombokAnnotation(PsiClass psiClass, String annotationFqn) {
         return psiClass.hasAnnotation(annotationFqn);
+    }
+
+    private PersistenceApi detectPersistenceApi(PsiClass psiClass) {
+        if (psiClass.hasAnnotation("javax.persistence.Entity")) {
+            return PersistenceApi.JAVAX;
+        }
+        if (psiClass.hasAnnotation("jakarta.persistence.Entity")) {
+            return PersistenceApi.JAKARTA;
+        }
+        return PersistenceApi.AUTO;
     }
     
     @Override

@@ -1,6 +1,7 @@
 package ui
 
 import com.babs.crudwizardrygenerator.dtos.EntityData
+import com.babs.crudwizardrygenerator.dtos.PersistenceApi
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
@@ -53,6 +54,7 @@ class GenerateEntityDialog(
     // Editor Fields
     private val entityNameField = JBTextField()
     private val packageNameField = JBTextField()
+    private val persistenceApiCombo = JComboBox(PersistenceApi.values())
     private val lombokDataCheck = JBCheckBox("Lombok @Data")
     private val lombokBuilderCheck = JBCheckBox("Lombok @Builder")
     
@@ -167,6 +169,10 @@ class GenerateEntityDialog(
             }
         })
 
+        persistenceApiCombo.addActionListener {
+            selectedEntity?.persistenceApi = persistenceApiCombo.selectedItem as PersistenceApi
+        }
+
         lombokDataCheck.addActionListener {
             selectedEntity?.lombokData = lombokDataCheck.isSelected
         }
@@ -231,6 +237,7 @@ class GenerateEntityDialog(
         val formPanel = FormBuilder.createFormBuilder()
             .addLabeledComponent("Entity name:", entityNameField)
             .addLabeledComponent("Package name:", packageNameField)
+            .addLabeledComponent("JPA imports:", persistenceApiCombo)
             .addComponent(lombokDataCheck)
             .addComponent(lombokBuilderCheck)
             .addSeparator()
@@ -278,6 +285,7 @@ class GenerateEntityDialog(
         if (!entityListModel.isEmpty) {
             val last = entityListModel.lastElement()
             newEntity.packageName = last.packageName
+            newEntity.persistenceApi = last.persistenceApi
         } else {
             newEntity.packageName = defaultPackageName
         }
@@ -313,6 +321,7 @@ class GenerateEntityDialog(
     private fun loadEntity(entity: EntityDataWrapper) {
         entityNameField.text = entity.entityName
         packageNameField.text = entity.packageName
+        persistenceApiCombo.selectedItem = entity.persistenceApi
         lombokDataCheck.isSelected = entity.lombokData
         lombokBuilderCheck.isSelected = entity.lombokBuilder
         
