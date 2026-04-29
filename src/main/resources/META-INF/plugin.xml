@@ -44,14 +44,14 @@
     <actions>
         <action id="com.babs.crudwizardrygenerator.actions.GenerateEntityAction"
                 class="com.babs.crudwizardrygenerator.actions.GenerateEntityAction"
-                text="Generate CRUD"
+                text="Generate Spring Boilerplate"
                 icon="AllIcons.Actions.IntentionBulb"
-                description="Generate CRUD Components for the selected class or directory">
+                description="Generate Spring boilerplate for the selected class or directory">
             <add-to-group group-id="NewGroup" anchor="last" />
             <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
         </action>
 
-        <group id="CrudWizardry.GenerateGroup" text="Generate CRUD Components" popup="true" icon="AllIcons.Actions.IntentionBulb">
+        <group id="CrudWizardry.GenerateGroup" text="Generate From Entity" popup="true" icon="AllIcons.Actions.IntentionBulb">
             <add-to-group group-id="GenerateGroup" anchor="last"/>
             <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
             

@@ -34,7 +34,8 @@ import javax.swing.table.TableCellEditor
 
 class GenerateEntityDialog(
     private val project: Project,
-    private val defaultPackageName: String = ""
+    private val defaultPackageName: String = "",
+    private val initialEntities: List<EntityData> = emptyList()
 ) : DialogWrapper(project) {
 
     /* ------------------ MODELS ------------------ */
@@ -81,9 +82,13 @@ class GenerateEntityDialog(
         setupEditorListeners()
         
         init()
-        
-        // Automatically add the first entity so the user isn't staring at a blank screen
-        addEntity()
+
+        if (initialEntities.isNotEmpty()) {
+            loadInitialEntities()
+        } else {
+            // Automatically add the first entity so the user isn't staring at a blank screen
+            addEntity()
+        }
     }
 
     /* ------------------ SETUP ------------------ */
@@ -315,6 +320,15 @@ class GenerateEntityDialog(
                 it.fields.removeAt(row)
                 fieldsTableModel.setFields(it.fields)
             }
+        }
+    }
+
+    private fun loadInitialEntities() {
+        initialEntities.forEach { entityData ->
+            entityListModel.addElement(EntityDataWrapper.fromEntityData(entityData))
+        }
+        if (!entityListModel.isEmpty) {
+            entityList.selectedIndex = 0
         }
     }
 

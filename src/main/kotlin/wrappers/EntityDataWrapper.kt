@@ -44,4 +44,24 @@ class EntityDataWrapper {
             generateDto,
             generateServiceInterface
         )
+
+    companion object {
+        fun fromEntityData(entityData: EntityData): EntityDataWrapper {
+            val wrapper = EntityDataWrapper()
+            wrapper.entityName = entityData.entityName
+            wrapper.packageName = entityData.packageName
+            wrapper.lombokData = entityData.isLombokData()
+            wrapper.lombokBuilder = entityData.isLombokBuilder()
+            wrapper.persistenceApi = entityData.persistenceApi
+            wrapper.generateEntity = entityData.isGenerateEntity()
+            wrapper.generateController = entityData.isGenerateController()
+            wrapper.generateService = entityData.isGenerateService()
+            wrapper.generateRepository = entityData.isGenerateRepository()
+            wrapper.generateDto = entityData.isGenerateDto()
+            wrapper.generateServiceInterface = entityData.isGenerateServiceInterface()
+            wrapper.fields.clear()
+            wrapper.fields.addAll(entityData.fields.map { FieldData(it.name, it.type, it.nullable) })
+            return wrapper
+        }
+    }
 }

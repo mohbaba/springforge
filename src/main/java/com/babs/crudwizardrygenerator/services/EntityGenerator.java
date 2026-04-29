@@ -40,7 +40,9 @@ public class EntityGenerator {
             List<String> extraImports = processCustomFields();
 
             // 1. Generate Entity
-            generateFile(data.getPackageName(), data.getEntityName(), renderEntityTemplate(extraImports));
+            if (data.isGenerateEntity()) {
+                generateFile(data.getPackageName(), data.getEntityName(), renderEntityTemplate(extraImports));
+            }
 
             // 2. Generate Repository
             if (data.isGenerateRepository()) {
