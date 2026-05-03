@@ -2,6 +2,7 @@ package com.babs.crudwizardrygenerator.services;
 
 import com.babs.crudwizardrygenerator.dtos.EntityData;
 import com.babs.crudwizardrygenerator.dtos.PersistenceApi;
+import com.babs.crudwizardrygenerator.utils.PackageNamingUtils;
 import com.intellij.ide.highlighter.JavaFileType;
 import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.project.Project;
@@ -46,16 +47,20 @@ public class EntityGenerator {
 
             // 2. Generate Repository
             if (data.isGenerateRepository()) {
-                String repoPackage = data.getPackageName().replace(".entity", ".repository").replace(".model", ".repository");
-                if (repoPackage.equals(data.getPackageName())) repoPackage += ".repository";
-                
+                String repoPackage = PackageNamingUtils.deriveLayerPackageFromEntity(
+                        data.getPackageName(),
+                        PackageNamingUtils.Layer.REPOSITORY
+                );
+                 
                 generateFile(repoPackage, data.getEntityName() + "Repository", renderRepositoryTemplate(repoPackage));
             }
 
             // 3. Generate Service
             if (data.isGenerateService()) {
-                String servicePackage = data.getPackageName().replace(".entity", ".service").replace(".model", ".service");
-                if (servicePackage.equals(data.getPackageName())) servicePackage += ".service";
+                String servicePackage = PackageNamingUtils.deriveLayerPackageFromEntity(
+                        data.getPackageName(),
+                        PackageNamingUtils.Layer.SERVICE
+                );
 
                 if (data.isGenerateServiceInterface()) {
                     generateFile(servicePackage, data.getEntityName() + "Service", renderServiceInterfaceTemplate(servicePackage));
@@ -67,16 +72,20 @@ public class EntityGenerator {
 
             // 4. Generate Controller
             if (data.isGenerateController()) {
-                String controllerPackage = data.getPackageName().replace(".entity", ".controller").replace(".model", ".controller");
-                if (controllerPackage.equals(data.getPackageName())) controllerPackage += ".controller";
+                String controllerPackage = PackageNamingUtils.deriveLayerPackageFromEntity(
+                        data.getPackageName(),
+                        PackageNamingUtils.Layer.CONTROLLER
+                );
 
                 generateFile(controllerPackage, data.getEntityName() + "Controller", renderControllerTemplate(controllerPackage));
             }
-            
+             
             // 5. Generate DTO
             if (data.isGenerateDto()) {
-                String dtoPackage = data.getPackageName().replace(".entity", ".dto").replace(".model", ".dto");
-                if (dtoPackage.equals(data.getPackageName())) dtoPackage += ".dto";
+                String dtoPackage = PackageNamingUtils.deriveLayerPackageFromEntity(
+                        data.getPackageName(),
+                        PackageNamingUtils.Layer.DTO
+                );
 
                 generateFile(dtoPackage, data.getEntityName() + "Dto", renderDtoTemplate(dtoPackage));
             }
@@ -367,8 +376,10 @@ public class EntityGenerator {
         if (!data.isGenerateDto()) {
             sb.append("import ").append(data.getPackageName()).append(".").append(entityName).append(";\n");
         } else {
-            String dtoPackage = data.getPackageName().replace(".entity", ".dto").replace(".model", ".dto");
-            if (dtoPackage.equals(data.getPackageName())) dtoPackage += ".dto";
+            String dtoPackage = PackageNamingUtils.deriveLayerPackageFromEntity(
+                    data.getPackageName(),
+                    PackageNamingUtils.Layer.DTO
+            );
             sb.append("import ").append(dtoPackage).append(".").append(entityName).append("Dto;\n");
         }
         
@@ -425,8 +436,10 @@ public class EntityGenerator {
         
         // Import DTO if generated
         if (data.isGenerateDto()) {
-            String dtoPackage = data.getPackageName().replace(".entity", ".dto").replace(".model", ".dto");
-            if (dtoPackage.equals(data.getPackageName())) dtoPackage += ".dto";
+            String dtoPackage = PackageNamingUtils.deriveLayerPackageFromEntity(
+                    data.getPackageName(),
+                    PackageNamingUtils.Layer.DTO
+            );
             sb.append("import ").append(dtoPackage).append(".").append(entityName).append("Dto;\n");
         }
         
@@ -540,14 +553,18 @@ public class EntityGenerator {
         sb.append("package ").append(packageName).append(";\n\n");
         
         // Import Service
-        String servicePackage = data.getPackageName().replace(".entity", ".service").replace(".model", ".service");
-        if (servicePackage.equals(data.getPackageName())) servicePackage += ".service";
+        String servicePackage = PackageNamingUtils.deriveLayerPackageFromEntity(
+                data.getPackageName(),
+                PackageNamingUtils.Layer.SERVICE
+        );
         sb.append("import ").append(servicePackage).append(".").append(serviceName).append(";\n");
-        
+         
         // Import DTO or Entity
         if (data.isGenerateDto()) {
-            String dtoPackage = data.getPackageName().replace(".entity", ".dto").replace(".model", ".dto");
-            if (dtoPackage.equals(data.getPackageName())) dtoPackage += ".dto";
+            String dtoPackage = PackageNamingUtils.deriveLayerPackageFromEntity(
+                    data.getPackageName(),
+                    PackageNamingUtils.Layer.DTO
+            );
             sb.append("import ").append(dtoPackage).append(".").append(entityName).append("Dto;\n");
         } else {
             sb.append("import ").append(data.getPackageName()).append(".").append(entityName).append(";\n");

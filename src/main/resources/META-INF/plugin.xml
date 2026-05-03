@@ -36,7 +36,9 @@
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
         <projectService serviceImplementation="com.babs.crudwizardrygenerator.services.EntityGeneratorService"/>
-
+        <notificationGroup id="SpringForge Notifications"
+                           displayType="BALLOON"
+                           isLogByDefault="true"/>
     </extensions>
     <depends>com.intellij.modules.java</depends>
 
@@ -49,6 +51,14 @@
                 description="Generate Spring boilerplate for the selected class or directory">
             <add-to-group group-id="NewGroup" anchor="last" />
             <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+        </action>
+
+        <action id="com.babs.crudwizardrygenerator.actions.GenerateControllerEndpointAction"
+                class="com.babs.crudwizardrygenerator.actions.GenerateControllerEndpointAction"
+                text="Generate Controller Endpoint"
+                icon="AllIcons.Actions.IntentionBulb"
+                description="Generate a controller endpoint for the selected service method">
+            <add-to-group group-id="GenerateGroup" anchor="last"/>
         </action>
 
         <group id="CrudWizardry.GenerateGroup" text="Generate From Entity" popup="true" icon="AllIcons.Actions.IntentionBulb">

@@ -3,6 +3,7 @@ package com.babs.crudwizardrygenerator.actions;
 import com.babs.crudwizardrygenerator.dtos.EntityData;
 import com.babs.crudwizardrygenerator.dtos.PersistenceApi;
 import com.babs.crudwizardrygenerator.services.EntityGenerator;
+import com.babs.crudwizardrygenerator.utils.PackageNamingUtils;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -89,12 +90,7 @@ public abstract class BaseGenerateAction extends AnAction {
         }
         
         // Fallback heuristics
-        if (currentPackage.endsWith(".dto")) return currentPackage.substring(0, currentPackage.length() - 4) + ".entity";
-        if (currentPackage.endsWith(".controller")) return currentPackage.substring(0, currentPackage.length() - 11) + ".entity";
-        if (currentPackage.endsWith(".service")) return currentPackage.substring(0, currentPackage.length() - 8) + ".entity";
-        if (currentPackage.endsWith(".repository")) return currentPackage.substring(0, currentPackage.length() - 11) + ".entity";
-        
-        return currentPackage;
+        return PackageNamingUtils.deriveEntityPackageFromLayer(currentPackage);
     }
 
     private List<FieldData> extractFields(PsiClass psiClass) {
