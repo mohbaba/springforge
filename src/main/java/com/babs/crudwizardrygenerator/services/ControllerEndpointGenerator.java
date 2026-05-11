@@ -25,6 +25,7 @@ import com.intellij.psi.PsiManager;
 import com.intellij.psi.PsiParameter;
 import com.intellij.psi.PsiPrimitiveType;
 import com.intellij.psi.PsiType;
+import com.intellij.psi.PsiTypes;
 import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.psi.codeStyle.JavaCodeStyleManager;
 import com.intellij.psi.search.GlobalSearchScope;
@@ -578,7 +579,7 @@ public class ControllerEndpointGenerator {
 
         String invocation = serviceFieldName + "." + serviceMethod.getName() + "(" + buildInvocationArgs(endpointSpec.parameters) + ")";
         PsiType returnType = serviceMethod.getReturnType();
-        if (returnType == null || PsiType.VOID.equals(returnType)) {
+        if (returnType == null || PsiTypes.voidType().equals(returnType)) {
             methodText.append("    ").append(invocation).append(";\n");
             methodText.append("    return ResponseEntity.noContent().build();\n");
         } else {
@@ -608,7 +609,7 @@ public class ControllerEndpointGenerator {
     }
 
     private String buildControllerReturnType(PsiType returnType) {
-        if (returnType == null || PsiType.VOID.equals(returnType)) {
+        if (returnType == null || PsiTypes.voidType().equals(returnType)) {
             return "ResponseEntity<Void>";
         }
         return "ResponseEntity<" + returnType.getCanonicalText() + ">";
