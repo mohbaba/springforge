@@ -120,6 +120,7 @@ class GenerateEntityDialog(
     private fun setupFieldsTable() {
         fieldsTable.rowHeight = 25
         fieldsTable.fillsViewportHeight = true
+        fieldsTable.putClientProperty("terminateEditOnFocusLost", true)
         
         // Set up custom editor for Type column with dynamic suggestions
         val typeColumn = fieldsTable.columnModel.getColumn(1)
@@ -373,6 +374,15 @@ class GenerateEntityDialog(
         }
         
         return null
+    }
+
+    override fun doOKAction() {
+        if (fieldsTable.isEditing) {
+            if (!fieldsTable.cellEditor.stopCellEditing()) {
+                return
+            }
+        }
+        super.doOKAction()
     }
 
     fun toEntityDataList(): List<EntityData> =

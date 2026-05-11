@@ -17,8 +17,10 @@ import com.intellij.psi.search.PsiShortNamesCache;
 import dtos.FieldData;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class EntityGenerator {
@@ -28,6 +30,7 @@ public class EntityGenerator {
     private final Project project;
     private final EntityData data;
     private final PsiDirectory initialDirectory;
+    private final Map<PackageNamingUtils.Layer, String> resolvedLayerPackages = new EnumMap<>(PackageNamingUtils.Layer.class);
 
     public EntityGenerator(Project project, EntityData data, PsiDirectory initialDirectory) {
         this.project = project;
@@ -47,20 +50,14 @@ public class EntityGenerator {
 
             // 2. Generate Repository
             if (data.isGenerateRepository()) {
-                String repoPackage = PackageNamingUtils.deriveLayerPackageFromEntity(
-                        data.getPackageName(),
-                        PackageNamingUtils.Layer.REPOSITORY
-                );
+                String repoPackage = resolveLayerPackage(PackageNamingUtils.Layer.REPOSITORY);
                  
                 generateFile(repoPackage, data.getEntityName() + "Repository", renderRepositoryTemplate(repoPackage));
             }
 
             // 3. Generate Service
             if (data.isGenerateService()) {
-                String servicePackage = PackageNamingUtils.deriveLayerPackageFromEntity(
-                        data.getPackageName(),
-                        PackageNamingUtils.Layer.SERVICE
-                );
+                String servicePackage = resolveLayerPackage(PackageNamingUtils.Layer.SERVICE);
 
                 if (data.isGenerateServiceInterface()) {
                     generateFile(servicePackage, data.getEntityName() + "Service", renderServiceInterfaceTemplate(servicePackage));
@@ -72,20 +69,14 @@ public class EntityGenerator {
 
             // 4. Generate Controller
             if (data.isGenerateController()) {
-                String controllerPackage = PackageNamingUtils.deriveLayerPackageFromEntity(
-                        data.getPackageName(),
-                        PackageNamingUtils.Layer.CONTROLLER
-                );
+                String controllerPackage = resolveLayerPackage(PackageNamingUtils.Layer.CONTROLLER);
 
                 generateFile(controllerPackage, data.getEntityName() + "Controller", renderControllerTemplate(controllerPackage));
             }
              
             // 5. Generate DTO
             if (data.isGenerateDto()) {
-                String dtoPackage = PackageNamingUtils.deriveLayerPackageFromEntity(
-                        data.getPackageName(),
-                        PackageNamingUtils.Layer.DTO
-                );
+                String dtoPackage = resolveLayerPackage(PackageNamingUtils.Layer.DTO);
 
                 generateFile(dtoPackage, data.getEntityName() + "Dto", renderDtoTemplate(dtoPackage));
             }
@@ -106,6 +97,7 @@ public class EntityGenerator {
                 processedTypes.add(typeName);
                 
                 if (isPrimitive(typeName)) continue;
+                if (isStandardJavaType(typeName)) continue;
 
                 PsiClass[] classes = PsiShortNamesCache.getInstance(project).getClassesByName(typeName, GlobalSearchScope.allScope(project));
                 
@@ -376,10 +368,7 @@ public class EntityGenerator {
         if (!data.isGenerateDto()) {
             sb.append("import ").append(data.getPackageName()).append(".").append(entityName).append(";\n");
         } else {
-            String dtoPackage = PackageNamingUtils.deriveLayerPackageFromEntity(
-                    data.getPackageName(),
-                    PackageNamingUtils.Layer.DTO
-            );
+            String dtoPackage = resolveLayerPackage(PackageNamingUtils.Layer.DTO);
             sb.append("import ").append(dtoPackage).append(".").append(entityName).append("Dto;\n");
         }
         
@@ -421,6 +410,7 @@ public class EntityGenerator {
         String entityName = data.getEntityName();
         String repoName = entityName + "Repository";
         String repoVar = Character.toLowerCase(entityName.charAt(0)) + entityName.substring(1) + "Repository";
+        String repoPackage = resolveLayerPackage(PackageNamingUtils.Layer.REPOSITORY);
         
         String idType = "Long";
         for (FieldData field : data.getFields()) {
@@ -433,13 +423,11 @@ public class EntityGenerator {
         StringBuilder sb = new StringBuilder();
         sb.append("package ").append(packageName).append(";\n\n");
         sb.append("import ").append(data.getPackageName()).append(".").append(entityName).append(";\n");
+        sb.append("import ").append(repoPackage).append(".").append(repoName).append(";\n");
         
         // Import DTO if generated
         if (data.isGenerateDto()) {
-            String dtoPackage = PackageNamingUtils.deriveLayerPackageFromEntity(
-                    data.getPackageName(),
-                    PackageNamingUtils.Layer.DTO
-            );
+            String dtoPackage = resolveLayerPackage(PackageNamingUtils.Layer.DTO);
             sb.append("import ").append(dtoPackage).append(".").append(entityName).append("Dto;\n");
         }
         
@@ -447,6 +435,7 @@ public class EntityGenerator {
         sb.append("import lombok.RequiredArgsConstructor;\n");
         sb.append("import java.util.List;\n");
         if (data.isGenerateDto()) {
+            sb.append("import org.springframework.beans.BeanUtils;\n");
             sb.append("import java.util.stream.Collectors;\n");
         }
         sb.append("\n");
@@ -502,23 +491,21 @@ public class EntityGenerator {
         // Mappers
         if (data.isGenerateDto()) {
             sb.append("    private ").append(entityName).append("Dto mapToDto(").append(entityName).append(" entity) {\n");
-            sb.append("        return ").append(entityName).append("Dto.builder()\n");
-            for (FieldData field : data.getFields()) {
-                String fieldName = field.getName();
-                String getter = "get" + Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1) + "()";
-                sb.append("                .").append(fieldName).append("(entity.").append(getter).append(")\n");
-            }
-            sb.append("                .build();\n");
+            sb.append("        if (entity == null) {\n");
+            sb.append("            return null;\n");
+            sb.append("        }\n");
+            sb.append("        ").append(entityName).append("Dto dto = new ").append(entityName).append("Dto();\n");
+            sb.append("        BeanUtils.copyProperties(entity, dto);\n");
+            sb.append("        return dto;\n");
             sb.append("    }\n\n");
             
             sb.append("    private ").append(entityName).append(" mapToEntity(").append(entityName).append("Dto dto) {\n");
-            sb.append("        return ").append(entityName).append(".builder()\n");
-            for (FieldData field : data.getFields()) {
-                String fieldName = field.getName();
-                String getter = "get" + Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1) + "()";
-                sb.append("                .").append(fieldName).append("(dto.").append(getter).append(")\n");
-            }
-            sb.append("                .build();\n");
+            sb.append("        if (dto == null) {\n");
+            sb.append("            return null;\n");
+            sb.append("        }\n");
+            sb.append("        ").append(entityName).append(" entity = new ").append(entityName).append("();\n");
+            sb.append("        BeanUtils.copyProperties(dto, entity);\n");
+            sb.append("        return entity;\n");
             sb.append("    }\n");
         }
 
@@ -553,18 +540,12 @@ public class EntityGenerator {
         sb.append("package ").append(packageName).append(";\n\n");
         
         // Import Service
-        String servicePackage = PackageNamingUtils.deriveLayerPackageFromEntity(
-                data.getPackageName(),
-                PackageNamingUtils.Layer.SERVICE
-        );
+        String servicePackage = resolveLayerPackage(PackageNamingUtils.Layer.SERVICE);
         sb.append("import ").append(servicePackage).append(".").append(serviceName).append(";\n");
          
         // Import DTO or Entity
         if (data.isGenerateDto()) {
-            String dtoPackage = PackageNamingUtils.deriveLayerPackageFromEntity(
-                    data.getPackageName(),
-                    PackageNamingUtils.Layer.DTO
-            );
+            String dtoPackage = resolveLayerPackage(PackageNamingUtils.Layer.DTO);
             sb.append("import ").append(dtoPackage).append(".").append(entityName).append("Dto;\n");
         } else {
             sb.append("import ").append(data.getPackageName()).append(".").append(entityName).append(";\n");
@@ -634,5 +615,59 @@ public class EntityGenerator {
 
         sb.append("}\n");
         return sb.toString();
+    }
+
+    private String resolveLayerPackage(PackageNamingUtils.Layer layer) {
+        return resolvedLayerPackages.computeIfAbsent(layer, this::computeLayerPackage);
+    }
+
+    private String computeLayerPackage(PackageNamingUtils.Layer layer) {
+        String existingPackage = findExistingLayerPackage(layer);
+        if (existingPackage != null) {
+            return existingPackage;
+        }
+
+        return PackageNamingUtils.deriveLayerPackageFromEntity(data.getPackageName(), layer);
+    }
+
+    private String findExistingLayerPackage(PackageNamingUtils.Layer layer) {
+        String basePackage = deriveBasePackage(data.getPackageName());
+        for (String segment : packageSegmentsFor(layer)) {
+            String candidate = basePackage == null || basePackage.isBlank()
+                    ? segment
+                    : basePackage + "." + segment;
+            if (findTargetDirectory(candidate) != null) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    private String deriveBasePackage(String entityPackage) {
+        if (entityPackage == null || entityPackage.isBlank()) {
+            return entityPackage;
+        }
+
+        for (String suffix : new String[]{"entities", "entity", "models", "model"}) {
+            if (entityPackage.equals(suffix)) {
+                return "";
+            }
+            String marker = "." + suffix;
+            if (entityPackage.endsWith(marker)) {
+                return entityPackage.substring(0, entityPackage.length() - marker.length());
+            }
+        }
+
+        return entityPackage;
+    }
+
+    private List<String> packageSegmentsFor(PackageNamingUtils.Layer layer) {
+        return switch (layer) {
+            case REPOSITORY -> List.of("repo", "repository", "repositories");
+            case SERVICE -> List.of("services", "service");
+            case CONTROLLER -> List.of("controller", "controllers");
+            case DTO -> List.of("dto", "dtos");
+            case ENTITY -> List.of("entities", "entity");
+        };
     }
 }
