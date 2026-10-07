@@ -1,0 +1,16 @@
+package com.babs.crudwizardrygenerator.agent;
+
+public enum AgentErrorCode {
+    PROJECT_NOT_AVAILABLE,
+    TOOL_NOT_FOUND,
+    INVALID_ARGUMENTS,
+    CLASS_NOT_FOUND,
+    METHOD_NOT_FOUND,
+    FILE_NOT_FOUND,
+    PATH_OUTSIDE_PROJECT,
+    INDEX_NOT_READY,
+    WRITE_FAILED,
+    GENERATION_FAILED,
+    UNSUPPORTED_OPERATION,
+    INTERNAL_ERROR
+}
