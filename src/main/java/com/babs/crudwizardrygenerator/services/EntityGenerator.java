@@ -7,7 +7,6 @@ import com.intellij.ide.highlighter.JavaFileType;
 import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.ProjectFileIndex;
-import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.*;
 import com.intellij.psi.codeStyle.CodeStyleManager;
@@ -30,15 +29,27 @@ public class EntityGenerator {
     private final Project project;
     private final EntityData data;
     private final PsiDirectory initialDirectory;
+    private final GenerationInteraction interaction;
     private final Map<PackageNamingUtils.Layer, String> resolvedLayerPackages = new EnumMap<>(PackageNamingUtils.Layer.class);
+    private final List<String> createdFiles = new ArrayList<>();
+    private final List<String> modifiedFiles = new ArrayList<>();
+    private final List<String> warnings = new ArrayList<>();
 
     public EntityGenerator(Project project, EntityData data, PsiDirectory initialDirectory) {
+        this(project, data, initialDirectory, new IdeGenerationInteraction(project));
+    }
+
+    public EntityGenerator(Project project, EntityData data, PsiDirectory initialDirectory, GenerationInteraction interaction) {
         this.project = project;
         this.data = data;
         this.initialDirectory = initialDirectory;
+        this.interaction = interaction;
     }
 
-    public void generate() {
+    public GenerationResult generate() {
+        createdFiles.clear();
+        modifiedFiles.clear();
+        warnings.clear();
         WriteCommandAction.runWriteCommandAction(project, () -> {
             // 0. Process custom fields
             List<String> extraImports = processCustomFields();
@@ -81,6 +92,8 @@ public class EntityGenerator {
                 generateFile(dtoPackage, data.getEntityName() + "Dto", renderDtoTemplate(dtoPackage));
             }
         });
+        return new GenerationResult(warnings.isEmpty() || !createdFiles.isEmpty() || !modifiedFiles.isEmpty(),
+                List.copyOf(createdFiles), List.copyOf(modifiedFiles), List.copyOf(warnings));
     }
 
     private List<String> processCustomFields() {
@@ -188,21 +201,19 @@ public class EntityGenerator {
 
     private void generateFile(String packageName, String className, String content) {
         PsiDirectory targetDir = resolveTargetDirectory(packageName);
-        if (targetDir == null) return;
+        if (targetDir == null) {
+            warnings.add("Could not resolve target package: " + packageName);
+            return;
+        }
 
         String fileName = className + ".java";
         PsiFile existingFile = targetDir.findFile(fileName);
+        boolean overwrite = existingFile != null;
 
         if (existingFile != null) {
-            int result = Messages.showYesNoDialog(
-                    project,
-                    "File '" + fileName + "' already exists in " + packageName + ".\nDo you want to overwrite it?",
-                    "File Already Exists",
-                    Messages.getQuestionIcon()
-            );
-
-            if (result == Messages.NO) {
-                return; 
+            if (!interaction.confirmOverwrite(fileName, packageName)) {
+                warnings.add("Skipped existing file: " + fileName);
+                return;
             }
             
             existingFile.delete();
@@ -217,7 +228,18 @@ public class EntityGenerator {
         if (createdFile != null) {
             CodeStyleManager.getInstance(project).reformat(createdFile);
             JavaCodeStyleManager.getInstance(project).shortenClassReferences(createdFile);
+            String path = relativePath(createdFile.getVirtualFile());
+            if (overwrite) modifiedFiles.add(path); else createdFiles.add(path);
         }
+    }
+
+    private String relativePath(VirtualFile file) {
+        VirtualFile baseDir = project.getBaseDir();
+        if (baseDir != null) {
+            String relative = com.intellij.openapi.vfs.VfsUtilCore.getRelativePath(file, baseDir, '/');
+            if (relative != null) return relative;
+        }
+        return file.getName();
     }
 
     private boolean fileExistsInCurrentPackage(String className) {

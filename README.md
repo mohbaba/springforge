@@ -37,6 +37,10 @@ CRUD Wizardry Generator is an IntelliJ IDEA plugin designed to streamline Spring
 - Java 17 or later.
 - Spring Boot project structure.
 
+## Agent-addressable foundation
+
+SpringForge includes a transport-independent internal command layer and a local JSON developer harness. It does not connect to any remote service yet. See [Agent Architecture](docs/agent-architecture.md) for the tool catalog, security model, examples, limitations, and Phase 2 plan.
+
 ## License
 
 This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE).

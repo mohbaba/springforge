@@ -1,6 +1,7 @@
 package com.babs.crudwizardrygenerator.actions;
 
-import com.babs.crudwizardrygenerator.services.ControllerEndpointGenerator;
+import com.babs.crudwizardrygenerator.services.ControllerGenerationService;
+import com.babs.crudwizardrygenerator.services.IdeGenerationInteraction;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -21,7 +22,8 @@ public class GenerateControllerEndpointAction extends AnAction {
             return;
         }
 
-        new ControllerEndpointGenerator(project).generateFor(method);
+        project.getService(ControllerGenerationService.class).generateFromServiceMethod(
+                project, method, new IdeGenerationInteraction(project));
     }
 
     @Override

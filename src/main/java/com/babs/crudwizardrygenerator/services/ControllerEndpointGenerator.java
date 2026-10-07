@@ -1,13 +1,9 @@
 package com.babs.crudwizardrygenerator.services;
 
 import com.babs.crudwizardrygenerator.utils.PackageNamingUtils;
-import com.intellij.notification.NotificationGroupManager;
-import com.intellij.notification.NotificationType;
-import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.ProjectFileIndex;
-import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiClass;
@@ -38,19 +34,20 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ControllerEndpointGenerator {
-    private static final String TITLE = "Generate Controller Endpoint";
-    private static final String NOTIFICATION_GROUP = "SpringForge Notifications";
-
     private final Project project;
 
     public ControllerEndpointGenerator(Project project) {
         this.project = project;
     }
 
-    public void generateFor(PsiMethod serviceMethod) {
+    public GenerationResult generateFor(PsiMethod serviceMethod) {
+        return generateFor(serviceMethod, new IdeGenerationInteraction(project));
+    }
+
+    public GenerationResult generateFor(PsiMethod serviceMethod, GenerationInteraction interaction) {
         PsiClass serviceClass = serviceMethod.getContainingClass();
         if (serviceClass == null) {
-            return;
+            return GenerationResult.failure("The service method has no containing class.");
         }
 
         PsiClass controllerContractClass = resolveControllerContractClass(serviceClass, serviceMethod);
@@ -58,15 +55,8 @@ public class ControllerEndpointGenerator {
         PsiClass controllerClass = findControllerClass(controllerContractClass);
         boolean shouldCreateController = false;
         if (controllerClass == null) {
-            int result = Messages.showYesNoDialog(
-                    project,
-                    "No matching controller class was found for " + safeName(controllerContractClass.getName())
-                            + ".\nDo you want to create one and add this endpoint?",
-                    TITLE,
-                    Messages.getQuestionIcon()
-            );
-            if (result != Messages.YES) {
-                return;
+            if (!interaction.confirmCreateController(safeName(controllerContractClass.getName()))) {
+                return GenerationResult.failure("No matching controller exists and creation was not approved.");
             }
             shouldCreateController = true;
         }
@@ -75,30 +65,24 @@ public class ControllerEndpointGenerator {
                 ? deriveServiceFieldName(controllerContractClass)
                 : findServiceFieldName(controllerClass, controllerContractClass);
         if (!shouldCreateController && serviceFieldName == null) {
-            Messages.showInfoMessage(
-                    project,
-                    "Found " + safeName(controllerClass.getName()) + ", but it does not appear to inject "
-                            + safeName(controllerContractClass.getName()) + ".",
-                    TITLE
-            );
-            return;
+            String warning = "Found " + safeName(controllerClass.getName()) + ", but it does not appear to inject "
+                    + safeName(controllerContractClass.getName()) + ".";
+            interaction.info(warning);
+            return GenerationResult.failure(warning);
         }
 
         if (!shouldCreateController && controllerAlreadyCallsServiceMethod(controllerClass, serviceMethod, serviceFieldName)) {
-            Messages.showInfoMessage(
-                    project,
-                    "A controller method already appears to call " + serviceMethod.getName() + "().",
-                    TITLE
-            );
-            return;
+            String warning = "A controller method already appears to call " + serviceMethod.getName() + "().";
+            interaction.info(warning);
+            return GenerationResult.failure(warning);
         }
 
         EndpointSpec endpointSpec;
         try {
             endpointSpec = buildEndpointSpec(serviceMethod);
         } catch (UnsupportedOperationException ex) {
-            Messages.showInfoMessage(project, ex.getMessage(), TITLE);
-            return;
+            interaction.info(ex.getMessage());
+            return GenerationResult.failure(ex.getMessage());
         }
 
         AtomicReference<String> successMessage = new AtomicReference<>();
@@ -131,8 +115,26 @@ public class ControllerEndpointGenerator {
         });
 
         if (successMessage.get() != null) {
-            notifySuccess(successMessage.get());
+            interaction.success(successMessage.get());
         }
+        PsiClass resultController = finalShouldCreateController ? findControllerClass(controllerContractClass) : finalControllerClass;
+        if (resultController == null || resultController.getContainingFile() == null
+                || resultController.getContainingFile().getVirtualFile() == null) {
+            return GenerationResult.failure("Controller generation did not produce a project file.");
+        }
+        String relativePath = relativePath(resultController.getContainingFile().getVirtualFile());
+        return new GenerationResult(true,
+                finalShouldCreateController ? List.of(relativePath) : List.of(),
+                finalShouldCreateController ? List.of() : List.of(relativePath), List.of());
+    }
+
+    private String relativePath(VirtualFile file) {
+        VirtualFile baseDir = project.getBaseDir();
+        if (baseDir != null) {
+            String relative = com.intellij.openapi.vfs.VfsUtilCore.getRelativePath(file, baseDir, '/');
+            if (relative != null) return relative;
+        }
+        return file.getName();
     }
 
     private PsiClass findControllerClass(PsiClass serviceClass) {
@@ -719,21 +721,6 @@ public class ControllerEndpointGenerator {
 
     private String controllerClassName(PsiClass psiClass) {
         return psiClass != null ? psiClass.getName() : null;
-    }
-
-    private void notifySuccess(String message) {
-        ApplicationManager.getApplication().invokeLater(() -> {
-            try {
-                NotificationGroupManager.getInstance()
-                        .getNotificationGroup(NOTIFICATION_GROUP)
-                        .createNotification(message, NotificationType.INFORMATION)
-                        .notify(project);
-            } catch (Throwable ignored) {
-                // Fall back to a visible IDE dialog if the notification channel is unavailable.
-            }
-
-            Messages.showInfoMessage(project, message, TITLE);
-        });
     }
 
     private enum HttpMethod {

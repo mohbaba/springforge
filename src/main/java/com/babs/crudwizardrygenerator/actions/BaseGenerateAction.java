@@ -1,21 +1,14 @@
 package com.babs.crudwizardrygenerator.actions;
 
-import com.babs.crudwizardrygenerator.dtos.EntityData;
-import com.babs.crudwizardrygenerator.dtos.PersistenceApi;
-import com.babs.crudwizardrygenerator.services.EntityGenerator;
-import com.babs.crudwizardrygenerator.utils.PackageNamingUtils;
+import com.babs.crudwizardrygenerator.services.CrudGenerationService;
+import com.babs.crudwizardrygenerator.services.IdeGenerationInteraction;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.*;
-import com.intellij.psi.search.GlobalSearchScope;
-import dtos.FieldData;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public abstract class BaseGenerateAction extends AnAction {
 
@@ -31,31 +24,10 @@ public abstract class BaseGenerateAction extends AnAction {
         if (classes.length == 0) return;
         PsiClass psiClass = classes[0];
 
-        String className = psiClass.getName();
-        if (className == null) return;
-
-        String entityName = getEntityName(className);
-        String packageName = getEntityPackage(project, entityName, javaFile.getPackageName());
-        
-        List<FieldData> fields = extractFields(psiClass);
-
-        EntityData entityData = new EntityData(
-                entityName,
-                packageName,
-                hasLombokAnnotation(psiClass, "lombok.Data"),
-                hasLombokAnnotation(psiClass, "lombok.Builder"),
-                detectPersistenceApi(psiClass),
-                fields,
-                false, // generateEntity - false because we are generating from an existing class
-                isGenerateController(),
-                isGenerateService(),
-                isGenerateRepository(),
-                isGenerateDto(),
-                isGenerateServiceInterface()
-        );
-
-        PsiDirectory dir = psiFile.getContainingDirectory();
-        new EntityGenerator(project, entityData, dir).generate();
+        project.getService(CrudGenerationService.class).generate(project, psiClass,
+                new CrudGenerationService.Options(isGenerateController(), isGenerateService(),
+                        isGenerateRepository(), isGenerateDto(), isGenerateServiceInterface()),
+                new IdeGenerationInteraction(project));
     }
 
     protected abstract boolean isGenerateController();
@@ -67,59 +39,6 @@ public abstract class BaseGenerateAction extends AnAction {
         return false;
     }
 
-    private String getEntityName(String className) {
-        if (className.endsWith("Dto")) return className.substring(0, className.length() - 3);
-        if (className.endsWith("Controller")) return className.substring(0, className.length() - 10);
-        if (className.endsWith("Service")) return className.substring(0, className.length() - 7);
-        if (className.endsWith("Repository")) return className.substring(0, className.length() - 10);
-        return className;
-    }
-
-    private String getEntityPackage(Project project, String entityName, String currentPackage) {
-        // Try to find the entity class in the project
-        PsiClass[] classes = JavaPsiFacade.getInstance(project).findClasses(currentPackage + "." + entityName, GlobalSearchScope.projectScope(project));
-        if (classes.length > 0) return currentPackage;
-
-        // Search globally for the entity name
-        classes = JavaPsiFacade.getInstance(project).findClasses(entityName, GlobalSearchScope.projectScope(project));
-        for (PsiClass cls : classes) {
-            PsiFile file = cls.getContainingFile();
-            if (file instanceof PsiJavaFile) {
-                return ((PsiJavaFile) file).getPackageName();
-            }
-        }
-        
-        // Fallback heuristics
-        return PackageNamingUtils.deriveEntityPackageFromLayer(currentPackage);
-    }
-
-    private List<FieldData> extractFields(PsiClass psiClass) {
-        List<FieldData> fields = new ArrayList<>();
-        for (PsiField field : psiClass.getAllFields()) {
-            // Skip static fields
-            if (field.hasModifierProperty(PsiModifier.STATIC)) continue;
-            
-            String name = field.getName();
-            String type = field.getType().getPresentableText();
-            fields.add(new FieldData(name, type, false));
-        }
-        return fields;
-    }
-    
-    private boolean hasLombokAnnotation(PsiClass psiClass, String annotationFqn) {
-        return psiClass.hasAnnotation(annotationFqn);
-    }
-
-    private PersistenceApi detectPersistenceApi(PsiClass psiClass) {
-        if (psiClass.hasAnnotation("javax.persistence.Entity")) {
-            return PersistenceApi.JAVAX;
-        }
-        if (psiClass.hasAnnotation("jakarta.persistence.Entity")) {
-            return PersistenceApi.JAKARTA;
-        }
-        return PersistenceApi.AUTO;
-    }
-    
     @Override
     public void update(@NotNull AnActionEvent e) {
         Project project = e.getProject();

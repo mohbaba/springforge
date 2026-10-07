@@ -35,7 +35,11 @@
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
-        <projectService serviceImplementation="com.babs.crudwizardrygenerator.services.EntityGeneratorService"/>
+        <projectService serviceImplementation="com.babs.crudwizardrygenerator.services.EntityGenerationService"/>
+        <projectService serviceImplementation="com.babs.crudwizardrygenerator.services.CrudGenerationService"/>
+        <projectService serviceImplementation="com.babs.crudwizardrygenerator.services.ControllerGenerationService"/>
+        <projectService serviceImplementation="com.babs.crudwizardrygenerator.agent.AgentToolRegistry"/>
+        <projectService serviceImplementation="com.babs.crudwizardrygenerator.agent.AgentCommandDispatcher"/>
         <notificationGroup id="SpringForge Notifications"
                            displayType="BALLOON"
                            isLogByDefault="true"/>
@@ -44,6 +48,12 @@
 
     
     <actions>
+        <action id="com.babs.crudwizardrygenerator.agent.LocalAgentCommandAction"
+                class="com.babs.crudwizardrygenerator.agent.LocalAgentCommandAction"
+                text="SpringForge: Run Local Agent Command"
+                description="Run a transport-independent SpringForge agent command locally">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
         <action id="com.babs.crudwizardrygenerator.actions.GenerateEntityAction"
                 class="com.babs.crudwizardrygenerator.actions.GenerateEntityAction"
                 text="Generate Spring Boilerplate"

@@ -1,8 +1,9 @@
 package com.babs.crudwizardrygenerator.actions;
 
 import com.babs.crudwizardrygenerator.dtos.EntityData;
-import com.babs.crudwizardrygenerator.dtos.PersistenceApi;
-import com.babs.crudwizardrygenerator.services.EntityGenerator;
+import com.babs.crudwizardrygenerator.services.CrudGenerationService;
+import com.babs.crudwizardrygenerator.services.EntityGenerationService;
+import com.babs.crudwizardrygenerator.services.IdeGenerationInteraction;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -11,11 +12,9 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.ProjectFileIndex;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.*;
-import dtos.FieldData;
 import org.jetbrains.annotations.NotNull;
 import ui.GenerateEntityDialog;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -43,7 +42,8 @@ public class GenerateEntityAction extends AnAction {
         String currentPackageName = (psiPackage != null) ? psiPackage.getQualifiedName() : "";
 
         List<EntityData> initialEntities = targetClass != null
-                ? Collections.singletonList(createPrefilledEntityData(targetClass, currentPackageName))
+                ? Collections.singletonList(project.getService(CrudGenerationService.class)
+                        .prefillEntity(targetClass, currentPackageName))
                 : Collections.emptyList();
 
         GenerateEntityDialog dialog = new GenerateEntityDialog(project, currentPackageName, initialEntities);
@@ -51,7 +51,8 @@ public class GenerateEntityAction extends AnAction {
 
         if (dialog.isOK()) {
             for (EntityData entity : dialog.toEntityDataList()) {
-                new EntityGenerator(project, entity, clickedDirectory).generate();
+                project.getService(EntityGenerationService.class).generate(project, entity, clickedDirectory,
+                        new IdeGenerationInteraction(project));
             }
         }
     }
@@ -112,50 +113,4 @@ public class GenerateEntityAction extends AnAction {
         return null;
     }
 
-    private EntityData createPrefilledEntityData(PsiClass psiClass, String fallbackPackageName) {
-        String entityName = psiClass.getName();
-        if (entityName == null) {
-            entityName = "NewEntity";
-        }
-
-        String packageName = fallbackPackageName;
-        PsiFile containingFile = psiClass.getContainingFile();
-        if (containingFile instanceof PsiJavaFile javaFile) {
-            packageName = javaFile.getPackageName();
-        }
-
-        return new EntityData(
-                entityName,
-                packageName,
-                psiClass.hasAnnotation("lombok.Data"),
-                psiClass.hasAnnotation("lombok.Builder"),
-                detectPersistenceApi(psiClass),
-                extractDeclaredFields(psiClass),
-                false,
-                true,
-                true,
-                true,
-                true,
-                false
-        );
-    }
-
-    private List<FieldData> extractDeclaredFields(PsiClass psiClass) {
-        List<FieldData> fields = new ArrayList<>();
-        for (PsiField field : psiClass.getFields()) {
-            if (field.hasModifierProperty(PsiModifier.STATIC)) continue;
-            fields.add(new FieldData(field.getName(), field.getType().getPresentableText(), false));
-        }
-        return fields;
-    }
-
-    private PersistenceApi detectPersistenceApi(PsiClass psiClass) {
-        if (psiClass.hasAnnotation("javax.persistence.Entity")) {
-            return PersistenceApi.JAVAX;
-        }
-        if (psiClass.hasAnnotation("jakarta.persistence.Entity")) {
-            return PersistenceApi.JAKARTA;
-        }
-        return PersistenceApi.AUTO;
-    }
 }
